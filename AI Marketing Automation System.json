@@ -1,0 +1,355 @@
+{
+  "name": "AI Marketing Automation System",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -272,
+        -112
+      ],
+      "id": "9caa23d2-48b8-47bc-990d-87c352004a1d",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "value": "400c4d68-6eca-801b-a7f3-feca59f372c7",
+          "mode": "list",
+          "cachedResultName": "Instagram Performance",
+          "cachedResultUrl": "https://app.notion.com/p/400c4d686eca801ba7f3feca59f372c7"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        -64,
+        -112
+      ],
+      "id": "01837186-0e4d-401b-986c-2f0de97754dc",
+      "name": "Get many database pages",
+      "credentials": {
+        "notionApi": {
+          "id": "VsWuAOactcDRG0go",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nreturn items.map(item => {\n  // استخراج القيم من خصائص Notion (عدّل المسميات حسب أسماء العناوين عندك في Notion)\n  const props = item.json.properties || {};\n  \n  const postName = props['Post Name/ID']?.title[0]?.plain_text || 'Untitled';\n  const postType = props['Post Type']?.select?.name || 'Unknown';\n  const reach = props['Reach']?.number || 1; // لتجنب القسمة على صفر\n  const likes = props['Likes']?.number || 0;\n  const comments = props['Comments']?.number || 0;\n  const shares = props['Shares']?.number || 0;\n  const saves = props['Saves']?.number || 0;\n  const hook = props['Caption / Hook']?.rich_text[0]?.plain_text || '';\n\n  const totalInteractions = likes + comments + shares + saves;\n  const engagementRate = ((totalInteractions / reach) * 100).toFixed(2);\n\n  return {\n    json: {\n      postName,\n      postType,\n      reach,\n      likes,\n      comments,\n      shares,\n      saves,\n      totalInteractions,\n      engagementRate: parseFloat(engagementRate),\n      hook\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        144,
+        -112
+      ],
+      "id": "4e6420d6-404f-4bf5-bcbb-5dd8f302675d",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Here is the performance data of our previous posts:\n{{ JSON.stringify($json) }}\n\nPlease analyze this data and return the detailed marketing hypothesis and 7-day content calendar according to your system instructions.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=You are the PadHouse AI Marketing Agent, a specialized marketing strategist for PadHouse (a store specializing in high-quality iPad accessories in Palestine). Your mission is to empower university students by showing how iPad accessories elevate their study routines, productivity, and lifestyle.\n\n### INSTRUCTIONS FOR AGENT:\n1. READ & ANALYZE: Read the past post data and summary retrieved from Notion. Analyze past performance to identify what content resonates best with university students.\n2. SEARCH TRENDS: Use the Tavily Search Tool to discover the latest tech news, student productivity hacks, study trends, and trending topics from the past week.\n3. HYPOTHESIZE: Formulate one testable marketing hypothesis to optimize engagement for the upcoming week based on your analysis and retrieved trends.\n4. GENERATE CONTENT PLAN: Combine past successful themes with newly discovered trends to create a structured 7-day content plan tailored specifically for Palestinian university students.\n5. FORMAT & OUTPUT: Return the finalized output in a clean, structured format optimized for email summary (via Gmail) and database entry (via Notion).\n\n---\n\n### OUTPUT FORMAT REQUIREMENTS:\n\n#### 1. Performance Analysis & Hypothesis\n* **Past Performance Analysis:** Brief evaluation of past post data, identifying top-performing content types (e.g., Carousels, Shorts/Reels, Study-vlog style).\n* **Marketing Hypothesis:** A single, clear, testable hypothesis for this week's strategy (e.g., \"Testing short-form video hooks showcasing iPad paperlike screen protectors during exam prep will increase engagement rate by 25%\").\n\n#### 2. Weekly Content Calendar (7 Posts)\nWrite all captions, hooks, and body texts in natural, engaging, and conversational Arabic tailored to university students in Palestine.\n\nFor EACH of the 7 posts, provide:\n* **Day:** (e.g., Day 1 - Sunday)\n* **Best Time:** Optimal publishing time based on Palestinian university student routines (e.g., \"Sunday 07:30 PM\").\n* **Content Type:** (e.g., Instagram Reel, TikTok, Carousel, Static Image)\n* **Target Product:** Specific PadHouse product featured (e.g., Magnetic Keyboard Case, Stylus Pen, Paperlike Screen Protector).\n* **Target Audience:** Specific segment (e.g., Engineering students, IT/MIS students, Medical students, Daily commuters).\n* **Hook (الخطاف):** First 3 seconds / Opening line in natural Arabic to grab immediate attention.\n* **Main Body Text (نص المنشور):** The core caption text written in a conversational, relatable style.\n* **Call to Action (CTA):** Clear directive encouraging comments, saves, shares, or store visits.\n* **Hashtags:** 3 to 5 targeted, highly relevant hashtags (e.g., #padhouse #ipad_palestine #جامعة_النجاح #دراسة_جامعية #ipad_accessories).\n\n---\n\n### TONAL GUIDELINES:\n- **Tone:** Friendly, enthusiastic, practical, and relatable to university life.\n- **Language:** Spoken/Natural Modern Arabic suitable for social media in Palestine."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        352,
+        -112
+      ],
+      "id": "accdc7bd-bb2f-4c66-8599-4d4701d2fdc5",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3-pro-image",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        272,
+        96
+      ],
+      "id": "5b9052dc-7d3a-4783-8106-5bbe7954a094",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "5bQnUFfdkzbJs3Ln",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "moathhazeem661@gmail.com",
+        "subject": "[Action Required] PadHouse AI Agent - Content Plan Approval",
+        "message": "=<div style=\"font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #2c3e50; max-width: 650px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 10px; padding: 25px; background-color: #ffffff;\">\n  \n  <h2 style=\"color: #1a365d; border-bottom: 3px solid #3182ce; padding-bottom: 10px; margin-top: 0; text-align: center;\">\n    🤖 PadHouse AI Agent - Content Plan Review\n  </h2>\n\n  <!-- 1. Performance Insights -->\n  <div style=\"background-color: #ebf8ff; border-left: 5px solid #3182ce; padding: 15px; margin-top: 20px; border-radius: 4px;\">\n    <h3 style=\"margin-top: 0; color: #2b6cb0; font-size: 16px;\">📊 Performance Insights</h3>\n    <p style=\"margin-bottom: 0; font-size: 14px; color: #4a5568;\">{{ $json.output.analysis_summary }}</p>\n  </div>\n\n  <!-- 2. Marketing Hypothesis -->\n  <div style=\"background-color: #fefcbf; border-left: 5px solid #d69e2e; padding: 15px; margin-top: 15px; border-radius: 4px;\">\n    <h3 style=\"margin-top: 0; color: #975a16; font-size: 16px;\">💡 Marketing Hypothesis</h3>\n    <p style=\"margin: 5px 0; font-size: 14px;\"><b>Opportunity:</b> {{ $json.output.marketing_hypothesis.opportunity }}</p>\n    <p style=\"margin: 5px 0; font-size: 14px;\"><b>Action:</b> {{ $json.output.marketing_hypothesis.action }}</p>\n    <p style=\"margin: 5px 0 0 0; font-size: 14px;\"><b>Goal / KPI:</b> {{ $json.output.marketing_hypothesis.goal }} ({{$json.output.marketing_hypothesis.kpi }})</p>\n  </div>\n\n  <!-- 3. Content Calendar -->\n  <h3 style=\"color: #2d3748; margin-top: 25px; font-size: 17px; border-bottom: 1px solid #edf2f7; padding-bottom: 8px;\">\n    📅 Proposed 7-Day Content Calendar\n  </h3>\n  \n  <ul style=\"padding-left: 20px; font-size: 14px; color: #2d3748;\">\n    {{ $json.output.content_calendar.map(p => `\n      <li style=\"margin-bottom: 12px;\">\n        <strong style=\"color: #2b6cb0;\">${p.day}</strong> \n        <span style=\"background-color: #edf2f7; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: bold;\">${p.post_type}</span>: \n        <i>\"${p.hook}\"</i>\n      </li>\n    `).join('') }}\n  </ul>\n\n  <hr style=\"border: 0; border-top: 1px solid #e2e8f0; margin: 30px 0 20px 0;\">\n\n  <!-- 4. Interactive Action Buttons -->\n  <div style=\"text-align: center;\">\n    <p style=\"font-size: 15px; font-weight: bold; margin-bottom: 15px; color: #4a5568;\">Please make your decision to resume the workflow:</p>\n    \n    <a href=\"{{ $execution.resumeUrl }}?action=approve\" \n       style=\"background-color: #38a169; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; margin-right: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);\">\n       Approve & Save to Notion\n    </a>\n\n    <a href=\"{{ $execution.resumeUrl }}?action=reject\" \n       style=\"background-color: #e53e3e; color: #ffffff; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.1);\">\n       Reject\n    </a>\n  </div>\n\n</div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        736,
+        -112
+      ],
+      "id": "da8b97f0-b2b2-42f0-8f7d-84738ff1f768",
+      "name": "Send a message",
+      "webhookId": "d29c4b8c-f62b-419d-bee9-9a608b69ae52",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "9NcBOjKo4wAbWWGE",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"past_performance_analysis\": \"أظهرت البيانات أن منشورات Reels ذات الطابع التعليمي (مثل شرح استخدام القلم في الدراسة وتدوين المحاضرات) تحقّق أعلى معدل تفاعل (Engagement Rate) وأعلى نسبة حفظ (Saves)، بينما المنشورات التي تعرض السعر أو المنتج مباشرة تعطي وصولاً (Reach) جيداً ولكن بتفاعل وحفظ أقل.\",\n  \"marketing_hypothesis\": \"التركيز على حل مشكلات الدراسة الحقيقية لطلاب الجامعات (مثل تعب اليد أثناء الكتابة وتنظيم السلايدات) عبر مقاطع Reel قصيرة واستخدام حماية الورق والقلم الذكي سيرفع معدل الحفظ (Saves) والمشاركة (Shares) بنسبة 20% خلال الأسبوع الحالي.\",\n  \"content_plan\": [\n    {\n      \"day\": \"Monday\",\n      \"best_time\": \"07:30 PM\",\n      \"content_type\": \"Reel\",\n      \"target_product\": \"PadHouse Pencil\",\n      \"target_audience\": \"طلاب الجامعات والتخصصات الطبية والهندسية\",\n      \"hook\": \"كيف تدرس 4 ساعات متواصلة بدون ما تتعب إيدك؟ 📝⚡\",\n      \"main_body_text\": \"إذا بتعاني من تعب الإيد أثناء تدوين المحاضرات الطويلة وتفريع السلايدات، قلم PadHouse المطور بقدملك تجربة كتابة سلسة وسريعة مع خاصية راحة اليد (Palm Rejection) واستجابة فورية! وخلي دراستك بالجامعة أسهل وأسرع. 🎓✨\",\n      \"call_to_action\": \"اطلبه الآن عبر الرسائل الخاصة واستفد من خصم الطلاب! 📩\",\n      \"hashtags\": [\n        \"#padhouse\",\n        \"#ipad_palestine\",\n        \"#جامعة_النجاح\",\n        \"#ipad_accessories\",\n        \"#najah_university\"\n      ]\n    },\n    {\n      \"day\": \"Tuesday\",\n      \"best_time\": \"08:00 PM\",\n      \"content_type\": \"Story\",\n      \"target_product\": \"iPad Keyboard Case & Accessories\",\n      \"target_audience\": \"طلاب الجامعات والموظفين\",\n      \"hook\": \"شو أكثر ميزة بتحتاجها لما تدرس على الآيباد بالجامعة؟ 💭🎓\",\n      \"main_body_text\": \"استبيان تفاعلي لتحديد احتياجات الجمهور والطلاب (كيبورد للتلاخيص، قلم للرسم والملاحظات، ولا حماية ورقية للشاشة؟).\",\n      \"call_to_action\": \"صوّت في الاستبيان بالستوري وشاركنا رأيك ليطلعلك الخصم! 🗳️\",\n      \"hashtags\": [\n        \"#padhouse\",\n        \"#ipad_palestine\",\n        \"#طلاب_الجامعات\",\n        \"#جامعة_بيرزيت\"\n      ]\n    },\n    {\n      \"day\": \"Wednesday\",\n      \"best_time\": \"06:30 PM\",\n      \"content_type\": \"Carousel\",\n      \"target_product\": \"PadHouse Pencil\",\n      \"target_audience\": \"طلاب الهندسة، IT، والتصميم\",\n      \"hook\": \"5 تطبيقات أساسية للرسم وتدوين الملاحظات للآيباد لازم تكون عندك 🎨📚\",\n      \"main_body_text\": \"جمعلكم فريق PadHouse أفضل 5 تطبيقات بتسهل عليك حل الواجبات، الرسم، والكتابة بالقلم الذكي وسحب السلايدات. اسحب الشاشة لتشوف التطبيقات كاملة والتفاصيل! ➡️\",\n      \"call_to_action\": \"احفظ المنشور عندك لترجعله وقت الدراسة والامتحانات! 📌\",\n      \"hashtags\": [\n        \"#padhouse\",\n        \"#ipad_accessories\",\n        \"#جامعة_النجاح\",\n        \"#تطبيقات_ايباد\",\n        \"#دراسة_جامعية\"\n      ]\n    },\n    {\n      \"day\": \"Thursday\",\n      \"best_time\": \"09:00 PM\",\n      \"content_type\": \"Reel\",\n      \"target_product\": \"Magnetic Screen Protector (Paperlike)\",\n      \"target_audience\": \"محبي الكتابة والتدوين بخط اليد\",\n      \"hook\": \"شعور الكتابة على الدفتر الورقي رجع من جديد على الآيباد! 📄✨\",\n      \"main_body_text\": \"حماية الشاشة المغناطيسية بتعطيك ملمس الورق الطبيعي والصوت الحقيقي أثناء الكتابة بقلم PadHouse، وغير هيك سهلة الفك والتركيب بأي وقت بدك تحضر فيه فيديوهات! 🎬\",\n      \"call_to_action\": \"منشن صاحبك بالجامعة اللي بحب يكتب كل شي بإيده! 👇📍\",\n      \"hashtags\": [\n        \"#padhouse\",\n        \"#paperlike_palestine\",\n        \"#ipad_palestine\",\n        \"#جامعة_النجاح\",\n        \"#najah\"\n      ]\n    },\n    {\n      \"day\": \"Friday\",\n      \"best_time\": \"04:00 PM\",\n      \"content_type\": \"Story\",\n      \"target_product\": \"جميع إكسسوارات PadHouse\",\n      \"target_audience\": \"جميع طلاب الجامعات والجمهور العام\",\n      \"hook\": \"عروض نهاية الأسبوع السريعة من PadHouse! 🎁🔥\",\n      \"main_body_text\": \"احصل على توصيل مجاني لكل مدن الضفة عند طلب القلم الذكي مع أي كفر أو كيبورد خلال 24 ساعة فقط!\",\n      \"call_to_action\": \"اضغط على الرابط بالبايو أو ارسل مسج للطلب المباشر 🔗📩\",\n      \"hashtags\": [\n        \"#padhouse\",\n        \"#عروض_فلسطين\",\n        \"#ipad_palestine\",\n        \"#توصيل_مجاني\"\n      ]\n    },\n    {\n      \"day\": \"Saturday\",\n      \"best_time\": \"08:30 PM\",\n      \"content_type\": \"Reel\",\n      \"target_product\": \"PadHouse Pencil vs Finger\",\n      \"target_audience\": \"مستخدمو الآيباد الجدد والطلاب\",\n      \"hook\": \"مقارنة عملية: الكتابة بالأصبع ضد الكتابة بقلم PadHouse 🖋️❌\",\n      \"main_body_text\": \"شوف الفرق الواضح بالدقة والسرعة وتظليل النوتات بين الاستخدام العادي بالأصبع وبين سلاسة قلم PadHouse المخصص للجامعات. الفرق شاسع بالنتيجة! 😮\",\n      \"call_to_action\": \"اكتبلنا بالتعليقات: بتفضل الدراسة بالقلم ولا الكيبورد؟ 💬\",\n      \"hashtags\": [\n        \"#padhouse\",\n        \"#ipad_pencil\",\n        \"#جامعة_النجاح\",\n        \"#najah_university\",\n        \"#ipad_palestine\"\n      ]\n    },\n    {\n      \"day\": \"Sunday\",\n      \"best_time\": \"07:00 PM\",\n      \"content_type\": \"Carousel\",\n      \"target_product\": \"iPad Keyboard Case\",\n      \"target_audience\": \"طلاب التخصصات الأدبية، الإدارية، وMIS\",\n      \"hook\": \"كيف تحوّل الآيباد لـ لابتوب كامل بضغطة واحدة؟ 💻🎓\",\n      \"main_body_text\": \"كفر الكيبورد الذكي من PadHouse بيجي مع لوحة مفاتيح (عربي/إنجليزي) وتاتش باد وسهولة ربط سريعة بالبلوتوث لتكتب أبحاثك وتقاريرك بكل راحة بالجامعة. 🚀\",\n      \"call_to_action\": \"احصل عليه الآن مع ضمان شامل واطلب كرت الخصم! 🛡️✨\",\n      \"hashtags\": [\n        \"#padhouse\",\n        \"#ipad_keyboard\",\n        \"#جامعة_النجاح\",\n        \"#جامعة_بيرزيت\",\n        \"#ipad_palestine\"\n      ]\n    }\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        576,
+        112
+      ],
+      "id": "bd8012d7-05cc-4892-be20-d3cf94f39007",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "value": "400c4d68-6eca-80c6-9e0f-dac3ea63cfee",
+          "mode": "list",
+          "cachedResultName": "Content Calendar",
+          "cachedResultUrl": "https://app.notion.com/p/400c4d686eca80c69e0fdac3ea63cfee"
+        },
+        "title": "={{ $json.output.content_calendar[0].day }} - {{ $json.output.content_calendar[0].hook }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Post Title|title"
+            },
+            {
+              "key": "Date|date"
+            },
+            {
+              "key": "Post Type|select"
+            },
+            {
+              "key": "Target Product|select"
+            },
+            {
+              "key": "Caption Text|rich_text"
+            },
+            {
+              "key": "CTA|rich_text"
+            },
+            {
+              "key": "Status|status"
+            },
+            {
+              "key": "Best Time|rich_text",
+              "textContent": "={{ $json.output.content_calendar[0].best_time }}"
+            },
+            {
+              "key": "Hashtags|rich_text",
+              "textContent": "={{ $json.output.content_calendar[0].hashtags }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        912,
+        -112
+      ],
+      "id": "1f1c3f64-718c-4051-8965-450562ec2529",
+      "name": "Create a database page",
+      "credentials": {
+        "notionApi": {
+          "id": "VsWuAOactcDRG0go",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/mcp-registry.tavily",
+      "typeVersion": 1,
+      "position": [
+        448,
+        112
+      ],
+      "id": "49790f28-dda8-4762-b630-55041d3ef4fd",
+      "name": "Tavily MCP",
+      "credentials": {
+        "tavilyMcpOAuth2Api": {
+          "id": "mSTgulYIIESBpDK5",
+          "name": "Tavily MCP OAuth2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "moathhazeem661@gmail.com",
+        "subject": "PadHouse ملخص تريندات الأسبوع وتحليل الأداء",
+        "message": "=<!DOCTYPE html>\n<html lang=\"ar\" dir=\"rtl\">\n<head>\n  <meta charset=\"UTF-8\">\n  <style>\n    body {\n      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n      background-color: #f4f6f9;\n      color: #333333;\n      margin: 0;\n      padding: 20px;\n      direction: rtl;\n      text-align: right;\n    }\n    .container {\n      max-width: 650px;\n      margin: 0 auto;\n      background-color: #ffffff;\n      border-radius: 12px;\n      overflow: hidden;\n      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);\n      border: 1px solid #e1e8ed;\n    }\n    .header {\n      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);\n      color: #ffffff;\n      padding: 30px 20px;\n      text-align: center;\n    }\n    .header h1 {\n      margin: 0;\n      font-size: 24px;\n      font-weight: 700;\n    }\n    .header p {\n      margin: 8px 0 0;\n      font-size: 14px;\n      opacity: 0.9;\n    }\n    .content {\n      padding: 25px 30px;\n    }\n    .section-card {\n      background-color: #f8fafc;\n      border-right: 4px solid #4f46e5;\n      border-radius: 6px;\n      padding: 16px 20px;\n      margin-bottom: 20px;\n    }\n    .section-title {\n      font-size: 16px;\n      font-weight: 700;\n      color: #1e293b;\n      margin-bottom: 8px;\n      display: flex;\n      align-items: center;\n      gap: 8px;\n    }\n    .section-body {\n      font-size: 14px;\n      line-height: 1.7;\n      color: #475569;\n      margin: 0;\n    }\n    .trend-list {\n      margin: 8px 0 0;\n      padding-right: 20px;\n    }\n    .trend-list li {\n      margin-bottom: 6px;\n      font-size: 14px;\n      color: #475569;\n    }\n    .footer {\n      background-color: #f1f5f9;\n      padding: 15px 20px;\n      text-align: center;\n      font-size: 12px;\n      color: #64748b;\n      border-top: 1px solid #e2e8f0;\n    }\n  </style>\n</head>\n<body>\n\n  <div class=\"container\">\n    <!-- Header -->\n    <div class=\"header\">\n      <h1>🔥 PadHouse Marketing Report</h1>\n      <p>تقرير تريندات الأسبوع + التحليل والفرضية التسويقية</p>\n    </div>\n\n    <!-- Content -->\n    <div class=\"content\">\n      <p style=\"font-size: 15px; color: #334155;\">أهلاً بك 👋،</p>\n      <p style=\"font-size: 14px; color: #64748b; line-height: 1.6;\">\n        إليك التقرير التسويقي الأسبوعي الخاص بـ <strong>PadHouse</strong>، والذي يوضح أهم التريندات التقنية والطلابية المكتشفة هذا الأسبوع بناءً على تحليل أداء المحتوى السابق وبحث الذكاء الاصطناعي:\n      </p>\n\n      <!-- Section 1 -->\n      <div class=\"section-card\">\n        <div class=\"section-title\">📊 1. ملخص تحليل الأداء السابق</div>\n        <p class=\"section-body\">\n          {{ $json.past_performance_analysis }}\n        </p>\n      </div>\n\n      <!-- Section 2 -->\n      <div class=\"section-card\" style=\"border-right-color: #06b6d4;\">\n        <div class=\"section-title\">🎯 2. الفرضية التسويقية للأسبوع</div>\n        <p class=\"section-body\">\n          {{ $json.marketing_hypothesis }}\n        </p>\n      </div>\n\n      <!-- Section 3 -->\n      <div class=\"section-card\" style=\"border-right-color: #10b981;\">\n        <div class=\"section-title\">🌐 3. أهم التريندات والأخبار المستخرجة (via Tavily)</div>\n        <ul class=\"trend-list\">\n          <li>زيادة البحث عن تطبيقات التظليل وتدوين الملاحظات (GoodNotes / Notion) للطلاب.</li>\n          <li>تريندات مقاطع الدراسة القصيرة (Study With Me / Study-Vlog) على Reels و TikTok.</li>\n          <li>التفاعل العالي مع حلول راحة اليد عند الكتابة وحماية الشاشة المغناطيسية الشبيهة بالورق.</li>\n        </ul>\n      </div>\n\n      <p style=\"font-size: 13px; color: #94a3b8; background: #fffbeeb0; padding: 10px; border-radius: 6px; border: 1px solid #fef3c7;\">\n        💡 <strong>ملحوظة للتنفيذ:</strong> تم اعتماد هذه التريندات والتحليلات مباشرة في صياغة \"جدول المحتوى الأسبوعي\" المرسل في البريد الإلكتروني الآخر.\n      </p>\n    </div>\n\n    <!-- Footer -->\n    <div class=\"footer\">\n      PadHouse AI Marketing Agent 🤖 • تم التوليد تلقائياً عبر n8n Automation\n    </div>\n  </div>\n\n</body>\n</html>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        736,
+        48
+      ],
+      "id": "41da96fb-31a8-4ad4-8237-83fb65af2299",
+      "name": "Send a message1",
+      "webhookId": "0a33597a-7228-4af6-a280-c2fd19cf1547",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "9NcBOjKo4wAbWWGE",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get many database pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many database pages": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Create a database page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tavily MCP": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message1": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "f0113289-0350-4332-96cb-497c2ccc50da",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "312b8e1c27ba1ae94b15ee40f5b475cef18128657bfd8917a13927efa9db76b9"
+  },
+  "nodeGroups": [],
+  "id": "KO1ikzhuCFVYRtAz",
+  "tags": []
+}
